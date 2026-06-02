@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llmops-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llmops-app
+  template:
+    metadata:
+      labels:
+        app: llmops-app
+    spec:
+      containers:
+      - name: llmops-app
+        image: us-central1-docker.pkg.dev/project-557b5402-8622-491a-b69/llmops-repo/llmops-app:latest
+        imagePullPolicy: Always       
+        
+        ports:
+        - containerPort: 5000
+        
+        resources:                    
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+
+        env:
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llmops-secrets
+              key: GROQ_API_KEY
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: llmops-secrets
+              key: HF_TOKEN
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: llmops-service
+spec:
+  selector:
+    app: llmops-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
+  type: LoadBalancer

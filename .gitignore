@@ -1,0 +1,5 @@
+venv/
+.env
+logs/
+Packages.egg-info/
+gcp-key.json    

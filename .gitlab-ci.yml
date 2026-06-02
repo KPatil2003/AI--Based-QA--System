@@ -1,0 +1,45 @@
+image: google/cloud-sdk:latest
+
+stages:
+  - checkout
+  - build
+  - deploy
+
+variables:
+  PROJECT_ID: "project-557b5402-8622-491a-b69"
+  REGION: "us-central1"
+  REPO: "llmops-repo"
+  REGISTRY: "us-central1-docker.pkg.dev"
+  CLUSTER: "llmops"
+
+checkout_code:
+  stage: checkout
+  script:
+    - echo "Code checked out."
+
+build_docker_image:
+  stage: build
+  services:
+    - name: docker:dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - apt-get update -y && apt-get install -y docker.io   
+    - echo "$GCP_SA_KEY" | base64 -d > gcp-key.json
+    - gcloud auth activate-service-account --key-file=gcp-key.json
+    - gcloud auth configure-docker $REGISTRY --quiet       
+  script:
+    - docker build -t $REGISTRY/$PROJECT_ID/$REPO/llmops-app:latest .
+    - docker push $REGISTRY/$PROJECT_ID/$REPO/llmops-app:latest
+
+deploy_to_gke:
+  stage: deploy
+  before_script:
+    - echo "$GCP_SA_KEY" | base64 -d > gcp-key.json
+    - gcloud auth activate-service-account --key-file=gcp-key.json
+    - gcloud auth configure-docker $REGISTRY --quiet
+  script:
+    - gcloud container clusters get-credentials $CLUSTER --region $REGION --project $PROJECT_ID
+    - kubectl apply -f kubernetes-deployment.yaml
