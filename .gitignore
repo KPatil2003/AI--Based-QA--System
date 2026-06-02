@@ -1,5 +1,14 @@
-venv/
+.venv/
 .env
+
+__pycache__/
+*.pyc
+
+data/*.db
+
+vectorstore/
+
+data/uploads/
+
 logs/
-Packages.egg-info/
-gcp-key.json    
+*.egg-info/
